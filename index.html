@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="한글 놀이" />
+  <title>한글 놀이</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+    html,body{overflow:hidden;height:100%;position:fixed;width:100%;overscroll-behavior:none;touch-action:none;-ms-touch-action:none}
+    #root{height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
+    @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+    @keyframes popIn{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-12px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+    input{user-select:text!important;-webkit-user-select:text!important}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const{useState,useRef,useEffect,useCallback}=React;
+const CONSONANTS=[{letter:"ㄱ",word:"기역",example:"가방",emoji:"🎒"},{letter:"ㄴ",word:"니은",example:"나비",emoji:"🦋"},{letter:"ㄷ",word:"디귿",example:"다리",emoji:"🌉"},{letter:"ㄹ",word:"리을",example:"라면",emoji:"🍜"},{letter:"ㅁ",word:"미음",example:"마우스",emoji:"🖱️"},{letter:"ㅂ",word:"비읍",example:"바나나",emoji:"🍌"},{letter:"ㅅ",word:"시옷",example:"사과",emoji:"🍎"},{letter:"ㅇ",word:"이응",example:"아이스크림",emoji:"🍦"},{letter:"ㅈ",word:"지읒",example:"자동차",emoji:"🚗"},{letter:"ㅊ",word:"치읓",example:"치즈",emoji:"🧀"},{letter:"ㅋ",word:"키읔",example:"코끼리",emoji:"🐘"},{letter:"ㅌ",word:"티읕",example:"토끼",emoji:"🐰"},{letter:"ㅍ",word:"피읖",example:"포도",emoji:"🍇"},{letter:"ㅎ",word:"히읗",example:"하마",emoji:"🦛"}];
+const VOWELS=[{letter:"ㅏ",word:"아",example:"아기",emoji:"👶"},{letter:"ㅑ",word:"야",example:"야구",emoji:"⚾"},{letter:"ㅓ",word:"어",example:"어머니",emoji:"👩"},{letter:"ㅕ",word:"여",example:"여우",emoji:"🦊"},{letter:"ㅗ",word:"오",example:"오리",emoji:"🦆"},{letter:"ㅛ",word:"요",example:"요리",emoji:"🍳"},{letter:"ㅜ",word:"우",example:"우산",emoji:"☂️"},{letter:"ㅠ",word:"유",example:"유리",emoji:"🪟"},{letter:"ㅡ",word:"으",example:"으름",emoji:"🌿"},{letter:"ㅣ",word:"이",example:"이빨",emoji:"🦷"}];
+const GANADA=[{letter:"가",word:"가방",emoji:"🎒"},{letter:"나",word:"나비",emoji:"🦋"},{letter:"다",word:"다리",emoji:"🌉"},{letter:"라",word:"라면",emoji:"🍜"},{letter:"마",word:"마차",emoji:"🐴"},{letter:"바",word:"바다",emoji:"🌊"},{letter:"사",word:"사과",emoji:"🍎"},{letter:"아",word:"아기",emoji:"👶"},{letter:"자",word:"자전거",emoji:"🚲"},{letter:"차",word:"차",emoji:"🍵"},{letter:"카",word:"카메라",emoji:"📷"},{letter:"타",word:"타조",emoji:"🦩"},{letter:"파",word:"파도",emoji:"🏄"},{letter:"하",word:"하늘",emoji:"🌤️"}];
+const EASY_WORDS=[{letter:"엄마",emoji:"👩"},{letter:"아빠",emoji:"👨"},{letter:"나무",emoji:"🌳"},{letter:"하늘",emoji:"🌤️"},{letter:"바다",emoji:"🌊"},{letter:"사과",emoji:"🍎"},{letter:"우유",emoji:"🥛"},{letter:"토끼",emoji:"🐰"},{letter:"나비",emoji:"🦋"},{letter:"구름",emoji:"☁️"},{letter:"고양이",emoji:"🐱"},{letter:"강아지",emoji:"🐶"},{letter:"사랑",emoji:"❤️"},{letter:"친구",emoji:"🤝"},{letter:"비",emoji:"🌧️"},{letter:"눈",emoji:"❄️"},{letter:"달",emoji:"🌙"},{letter:"별",emoji:"⭐"},{letter:"꽃",emoji:"🌸"},{letter:"물",emoji:"💧"}];
+const CW=["#FF6B9D","#FF8E72","#FFA94D","#FFD43B","#FF7EB3","#FF9A76","#FFBF69","#FFE66D","#FF85A1","#FFC2D1","#FFB4A2","#FFCDB2","#FFE5D9","#FF9F1C"];
+const CC=["#A9E34B","#69DB7C","#38D9A9","#3BC9DB","#4DABF7","#748FFC","#9775FA","#DA77F2","#96F2D7","#BAC8FF"];
+const CWD=["#FF6B9D","#4DABF7","#69DB7C","#FFD43B","#9775FA","#FF8E72","#38D9A9","#DA77F2","#FFA94D","#748FFC","#FF7EB3","#3BC9DB","#A9E34B","#F06595","#FF85A1","#FFBF69","#96F2D7","#BAC8FF","#FFE66D","#D0BFFF"];
+const speak=(t,r=0.8)=>{window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="ko-KR";u.rate=r;u.pitch=1.1;window.speechSynthesis.speak(u)};
+const playOK=()=>{try{const c=new(window.AudioContext||window.webkitAudioContext)();const p=(f,t,d)=>{const o=c.createOscillator();const g=c.createGain();o.type="sine";o.frequency.value=f;g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.01,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d)};p(830,c.currentTime,.15);p(1100,c.currentTime+.15,.25)}catch(e){}};
+const playNG=()=>{try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.type="square";o.frequency.value=200;g.gain.setValueAtTime(.15,c.currentTime);g.gain.exponentialRampToValueAtTime(.01,c.currentTime+.25);o.connect(g);g.connect(c.destination);o.start(c.currentTime);o.stop(c.currentTime+.25)}catch(e){}};
+const Confetti=({show})=>{if(!show)return null;const ps=Array.from({length:40},(_,i)=>({id:i,left:Math.random()*100,delay:Math.random()*.5,color:["#FF6B9D","#FFD43B","#69DB7C","#4DABF7","#DA77F2","#FF8E72"][i%6],size:6+Math.random()*8}));return(<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:9999}}>{ps.map(p=>(<div key={p.id} style={{position:"absolute",left:p.left+"%",top:"-10px",width:p.size,height:p.size,backgroundColor:p.color,borderRadius:Math.random()>.5?"50%":"2px",animation:"confettiFall 1.8s "+p.delay+"s ease-in forwards"}}/>))}</div>)};
+const SubTab=({active,setActive,tabs})=>(<div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:16}}>{tabs.map(t=>(<button key={t.id} onClick={()=>setActive(t.id)} style={{padding:"8px 14px",border:"none",borderRadius:12,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Jua',sans-serif",background:active===t.id?"#FF6B9D":"rgba(255,255,255,0.6)",color:active===t.id?"#fff":"#888",transition:"all 0.2s"}}>{t.label}</button>))}</div>);
+
+const HangulCards=()=>{
+  const[subTab,setSubTab]=useState("consonant");
+  const dm={consonant:CONSONANTS,vowel:VOWELS};const cm={consonant:CW,vowel:CC};
+  const data=dm[subTab];const colors=cm[subTab];
+  const[idx,setIdx]=useState(0);const[flip,setFlip]=useState(false);
+  const d=data[idx];const color=colors[idx%colors.length];
+  const go=i=>{setFlip(true);setTimeout(()=>{setIdx(i);setFlip(false)},250)};
+  const prev=()=>go((idx-1+data.length)%data.length);const next=()=>go((idx+1)%data.length);
+  useEffect(()=>{setIdx(0)},[subTab]);
+  return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
+    <SubTab active={subTab} setActive={setSubTab} tabs={[{id:"consonant",label:"자음 (ㄱㄴㄷ)"},{id:"vowel",label:"모음 (ㅏㅑㅓ)"}]}/>
+    <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",maxWidth:400}}>
+      {data.map((item,i)=>(<button key={item.letter} onClick={()=>setIdx(i)} style={{width:36,height:36,border:"none",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:700,fontFamily:"'Jua',sans-serif",background:i===idx?colors[i%colors.length]:"rgba(255,255,255,0.6)",color:i===idx?"#fff":"#888",transition:"all 0.2s",transform:i===idx?"scale(1.15)":"scale(1)"}}>{item.letter}</button>))}
+    </div>
+    <div onClick={()=>speak(d.letter)} style={{width:280,minHeight:340,borderRadius:28,padding:28,cursor:"pointer",background:"linear-gradient(145deg,"+color+"22,"+color+"44)",border:"3px solid "+color+"66",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,position:"relative",transform:flip?"scale(0.9) rotateY(90deg)":"scale(1) rotateY(0deg)",transition:"all 0.3s",boxShadow:"0 8px 30px "+color+"33"}}>
+      <div style={{fontSize:70}}>{d.emoji}</div>
+      <div style={{fontSize:90,fontWeight:700,fontFamily:"'Jua',sans-serif",color:color,lineHeight:1}}>{d.letter}</div>
+      <div style={{fontSize:18,fontWeight:700,color:"#666",fontFamily:"'Jua',sans-serif"}}>{d.word}</div>
+      <div style={{fontSize:20,color:"#999",fontFamily:"'Jua',sans-serif"}}>{d.example}</div>
+      <div style={{position:"absolute",top:12,right:16,fontSize:22,opacity:.5}}>🔊</div>
+    </div>
+    <div style={{display:"flex",gap:16,alignItems:"center"}}>
+      <button onClick={prev} style={{width:48,height:48,border:"none",borderRadius:14,cursor:"pointer",fontSize:18,background:"rgba(255,255,255,0.8)",color:"#555",boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>◀</button>
+      <span style={{fontSize:14,color:"#999",fontFamily:"'Jua',sans-serif"}}>{idx+1} / {data.length}</span>
+      <button onClick={next} style={{width:48,height:48,border:"none",borderRadius:14,cursor:"pointer",fontSize:18,background:"rgba(255,255,255,0.8)",color:"#555",boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>▶</button>
+    </div>
+  </div>)};
+
+const HangulWriting=()=>{
+  const[subTab,setSubTab]=useState("ganada");
+  const dm={ganada:GANADA,words:EASY_WORDS};const cms={ganada:CW,words:CWD};
+  const data=dm[subTab];const colors=cms[subTab];
+  const[idx,setIdx]=useState(0);const canvasRef=useRef(null);const[isDrawing,setIsDrawing]=useState(false);
+  const d=data[idx];const color=colors[idx%colors.length];
+  const clearCanvas=useCallback(()=>{const c=canvasRef.current;if(!c)return;const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);const fs=d.letter.length<=1?180:d.letter.length===2?120:90;ctx.font="bold "+fs+"px Jua,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=color+"40";ctx.fillText(d.letter,c.width/2,c.height/2);ctx.strokeStyle="#ddd";ctx.lineWidth=1;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(20,c.height*.7);ctx.lineTo(c.width-20,c.height*.7);ctx.stroke();ctx.setLineDash([])},[idx,color,d.letter,subTab]);
+  useEffect(()=>{clearCanvas()},[clearCanvas]);
+  useEffect(()=>{setIdx(0)},[subTab]);
+  const getPos=e=>{const c=canvasRef.current;const r=c.getBoundingClientRect();const sx=c.width/r.width;const sy=c.height/r.height;if(e.touches)return{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy};return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy}};
+  const startDraw=e=>{e.preventDefault();setIsDrawing(true);const ctx=canvasRef.current.getContext("2d");const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle=color;ctx.lineWidth=6;ctx.lineCap="round";ctx.lineJoin="round"};
+  const draw=e=>{e.preventDefault();if(!isDrawing)return;const ctx=canvasRef.current.getContext("2d");const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke()};
+  const stopDraw=()=>setIsDrawing(false);
+  return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
+    <SubTab active={subTab} setActive={setSubTab} tabs={[{id:"ganada",label:"가나다"},{id:"words",label:"쉬운 단어"}]}/>
+    <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center",maxWidth:420}}>
+      {data.map((item,i)=>(<button key={item.letter+i} onClick={()=>setIdx(i)} style={{minWidth:34,height:34,padding:"0 6px",border:"none",borderRadius:7,cursor:"pointer",fontSize:subTab==="words"?12:14,fontWeight:700,fontFamily:"'Jua',sans-serif",background:i===idx?colors[i%colors.length]:"rgba(255,255,255,0.5)",color:i===idx?"#fff":"#888",transition:"all 0.2s"}}>{item.letter}</button>))}
+    </div>
+    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+      <span style={{fontSize:36}}>{d.emoji}</span>
+      <span style={{fontSize:d.letter.length>2?32:44,fontWeight:700,color:color,fontFamily:"'Jua',sans-serif"}}>{d.letter}</span>
+      <button onClick={()=>speak(d.letter)} style={{background:"none",border:"none",fontSize:28,cursor:"pointer"}}>🔊</button>
+    </div>
+    <div style={{borderRadius:20,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.08)",background:"#fff",border:"3px solid "+color+"33"}}>
+      <canvas ref={canvasRef} width={300} height={300} style={{width:300,height:300,touchAction:"none",cursor:"crosshair"}} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw} onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}/>
+    </div>
+    <div style={{display:"flex",gap:10}}>
+      <button onClick={clearCanvas} style={{padding:"10px 24px",border:"none",borderRadius:12,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"'Jua',sans-serif",background:"#FF6B6B",color:"#fff"}}>🗑️ 지우기</button>
+      <button onClick={()=>{speak("잘했어요!");clearCanvas();setIdx(i=>(i+1)%data.length)}} style={{padding:"10px 24px",border:"none",borderRadius:12,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"'Jua',sans-serif",background:"#69DB7C",color:"#fff"}}>✅ 다음</button>
+    </div>
+  </div>)};
+
+const HangulTyping=()=>{
+  const[subTab,setSubTab]=useState("consonant");
+  const dm={consonant:CONSONANTS,vowel:VOWELS,ganada:GANADA};const cms={consonant:CW,vowel:CC,ganada:CW};
+  const data=dm[subTab];const colors=cms[subTab];
+  const[idx,setIdx]=useState(0);const[score,setScore]=useState(0);const[total,setTotal]=useState(0);
+  const[streak,setStreak]=useState(0);const[feedback,setFeedback]=useState(null);
+  const[showConfetti,setShowConfetti]=useState(false);const[shakeAnim,setShakeAnim]=useState(false);
+  const[popAnim,setPopAnim]=useState(false);const inputRef=useRef(null);
+  const d=data[idx];const color=colors[idx%colors.length];
+  useEffect(()=>{setIdx(Math.floor(Math.random()*data.length));setScore(0);setTotal(0);setStreak(0);setFeedback(null)},[subTab]);
+  const nextLetter=useCallback(()=>{let n;do{n=Math.floor(Math.random()*data.length)}while(n===idx&&data.length>1);setIdx(n);setFeedback(null);setPopAnim(true);setTimeout(()=>setPopAnim(false),300);if(inputRef.current){inputRef.current.value="";inputRef.current.focus()}},[idx,data.length]);
+  const clearInput=()=>{if(inputRef.current){inputRef.current.blur();inputRef.current.value="";setTimeout(()=>{if(inputRef.current){inputRef.current.value="";inputRef.current.focus()}},50)}};
+  const checkAnswer=useCallback((val)=>{if(feedback||!val)return;if(val===d.letter){setTotal(t=>t+1);setScore(s=>s+1);const ns=streak+1;setStreak(ns);setFeedback("correct");playOK();speak(d.letter);if(ns>0&&ns%5===0){setShowConfetti(true);setTimeout(()=>setShowConfetti(false),2000)}setTimeout(()=>{clearInput();nextLetter()},800)}else{setTotal(t=>t+1);setStreak(0);setFeedback("wrong");playNG();setShakeAnim(true);setTimeout(()=>setShakeAnim(false),500);setTimeout(()=>{setFeedback(null);clearInput()},1000)}},[feedback,d.letter,streak,nextLetter]);
+  const handleSubmit=()=>{if(!inputRef.current)return;const val=inputRef.current.value.trim();if(val)checkAnswer(val)};
+  const handleKeyDown=e=>{if(e.key==="Enter"){e.preventDefault();handleSubmit()}};
+  const timerRef=useRef(null);
+  const handleInputChange=()=>{if(timerRef.current)clearTimeout(timerRef.current);const delay=subTab==="ganada"?3000:300;timerRef.current=setTimeout(()=>{if(!inputRef.current||feedback)return;const val=inputRef.current.value.trim();if(val.length>=d.letter.length){checkAnswer(val)}},delay)};
+  return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:18}}>
+    <Confetti show={showConfetti}/>
+    <SubTab active={subTab} setActive={setSubTab} tabs={[{id:"consonant",label:"자음"},{id:"vowel",label:"모음"},{id:"ganada",label:"가나다"}]}/>
+    <div style={{display:"flex",gap:14,alignItems:"center"}}>
+      <div style={{display:"flex",gap:8,alignItems:"center",background:"rgba(255,255,255,0.6)",padding:"8px 16px",borderRadius:14}}>
+        <span style={{fontSize:22}}>⭐</span>
+        <span style={{fontSize:18,fontWeight:700,color:"#FFD43B",fontFamily:"'Jua',sans-serif"}}>{score} / {total}</span>
+      </div>
+      {streak>=2&&(<div style={{display:"flex",gap:4,alignItems:"center",background:"#FF6B6B22",padding:"8px 14px",borderRadius:14,animation:"popIn 0.3s ease-out"}}><span style={{fontSize:18}}>🔥</span><span style={{fontSize:16,fontWeight:700,color:"#FF6B6B",fontFamily:"'Jua',sans-serif"}}>{streak}연속!</span></div>)}
+    </div>
+    <div style={{fontSize:16,fontWeight:700,color:"#666",fontFamily:"'Jua',sans-serif",textAlign:"center"}}>이 글자를 입력하고<br/>확인을 눌러보세요!</div>
+    <div style={{width:200,height:200,borderRadius:30,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:feedback==="correct"?"#69DB7C22":feedback==="wrong"?"#FF6B6B22":"linear-gradient(145deg,"+color+"15,"+color+"30)",border:feedback==="correct"?"4px solid #69DB7C":feedback==="wrong"?"4px solid #FF6B6B":"4px solid "+color+"44",transition:"all 0.3s",boxShadow:"0 8px 30px "+color+"22",animation:shakeAnim?"shake 0.4s ease-in-out":popAnim?"popIn 0.3s ease-out":"none"}}>
+      <span style={{fontSize:36,marginBottom:4}}>{d.emoji}</span>
+      <span style={{fontSize:80,fontWeight:700,lineHeight:1,fontFamily:"'Jua',sans-serif",color:feedback==="correct"?"#69DB7C":feedback==="wrong"?"#FF6B6B":color,transition:"color 0.2s"}}>{d.letter}</span>
+    </div>
+    <div style={{height:36,display:"flex",alignItems:"center"}}>
+      {feedback==="correct"&&<div style={{fontSize:20,fontWeight:700,color:"#2B8A3E",fontFamily:"'Jua',sans-serif",animation:"popIn 0.3s ease-out"}}>🎉 정답!</div>}
+      {feedback==="wrong"&&<div style={{fontSize:20,fontWeight:700,color:"#C92A2A",fontFamily:"'Jua',sans-serif",animation:"popIn 0.3s ease-out"}}>😊 다시!</div>}
+      {!feedback&&<div style={{fontSize:28,animation:"float 2s ease-in-out infinite"}}>⌨️</div>}
+    </div>
+    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+      <input ref={inputRef} type="text" autoComplete="off" autoCapitalize="off" onKeyDown={handleKeyDown} onInput={handleInputChange} placeholder="여기에 입력" style={{width:200,padding:"12px 16px",borderRadius:14,border:"2px solid "+color+"44",fontSize:24,fontFamily:"'Jua',sans-serif",textAlign:"center",outline:"none",background:"rgba(255,255,255,0.8)",color:"#444",userSelect:"text"}}/>
+    </div>
+    <div style={{fontSize:12,color:"#aaa"}}>글자를 입력하면 자동으로 확인돼요</div>
+    <button onClick={()=>{setScore(0);setTotal(0);setStreak(0);setFeedback(null);nextLetter()}} style={{padding:"8px 20px",border:"none",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Jua',sans-serif",background:"rgba(0,0,0,0.06)",color:"#888"}}>🔄 점수 초기화</button>
+  </div>)};
+
+const TabNav=({activeTab,setActiveTab})=>{
+  const tabs=[{id:"cards",label:"카드",icon:"🃏"},{id:"write",label:"따라쓰기",icon:"✏️"},{id:"typing",label:"타이핑",icon:"⌨️"}];
+  return(<div style={{display:"flex",gap:8,justifyContent:"center",padding:"10px 14px",background:"rgba(255,255,255,0.7)",borderRadius:20,margin:"0 auto",backdropFilter:"blur(10px)",maxWidth:400}}>
+    {tabs.map(tab=>(<button key={tab.id} onClick={()=>setActiveTab(tab.id)} style={{flex:1,padding:"10px 4px",border:"none",borderRadius:14,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"'Jua',sans-serif",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",background:activeTab===tab.id?"#FF6B9D":"transparent",color:activeTab===tab.id?"#fff":"#555",transform:activeTab===tab.id?"scale(1.05)":"scale(1)",boxShadow:activeTab===tab.id?"0 4px 15px rgba(255,107,157,0.4)":"none"}}><span style={{fontSize:18}}>{tab.icon}</span><br/><span style={{fontSize:11}}>{tab.label}</span></button>))}
+  </div>)};
+
+function App(){
+  const[activeTab,setActiveTab]=useState("cards");
+  return(<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#FFF0F5 0%,#FFF5EE 25%,#FFF8DC 50%,#F0FFF0 75%,#FFF0F5 100%)",padding:"20px 16px 40px",fontFamily:"'Jua',sans-serif"}}>
+    <div style={{textAlign:"center",marginBottom:18}}>
+      <h1 style={{fontSize:28,fontWeight:700,fontFamily:"'Jua',sans-serif",background:"linear-gradient(135deg,#FF6B9D,#FF8E72,#FFD43B,#69DB7C,#4DABF7)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",margin:0,lineHeight:1.3}}>🌸 한글 놀이</h1>
+      <p style={{fontSize:13,color:"#999",margin:"4px 0 0",fontWeight:600}}>재미있게 한글을 배워요!</p>
+    </div>
+    <TabNav activeTab={activeTab} setActiveTab={setActiveTab}/>
+    <div style={{marginTop:20}}>
+      {activeTab==="cards"&&<HangulCards/>}
+      {activeTab==="write"&&<HangulWriting/>}
+      {activeTab==="typing"&&<HangulTyping/>}
+    </div>
+  </div>)}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
